@@ -1,3 +1,6 @@
+mkdir firstproj-git
+cd firstproj-git
+git init
 mkdir firstproj
 touch README.md
 git status
