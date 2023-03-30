@@ -20,4 +20,4 @@ git status
 git add README.md
 git status
 git commit -m "fix(README): add commands from 2nd subtask"
-history
+git log --oneline --all --graph
