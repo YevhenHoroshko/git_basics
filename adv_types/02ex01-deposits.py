@@ -35,49 +35,61 @@ TOTAL = SUM * ((1 + p) ** (SET_PERIOD / FIXED_PERIOD))
 #       not known at the moment the script is run
 
 
-USAGE = """USAGE: {script} initial_sum percent fixed_period set_period
-
+USAGE = """USAGE: {script} percent fixed_period set_period [initial_sum]
 \tCalculate deposit yield. See script source for more details.
+
+By default, initial_sum is None.
+Set all time periods in days.
 """
 USAGE = USAGE.strip()
 
-MONTH = 30.44
-YEAR = 365.24
-FIVE_YEAR = 1826.21
-TEN_YEAR = 3652.42
+MONTH = 30
+YEAR = 365
+FIVE_YEAR = 1826
+TEN_YEAR = 3652
 
 
 def deposit(percent, fixed_period, set_period, initial_sum = None):
     """Calculate deposit yield."""
+    
     per = percent / 100
     growth = [(1 + per) ** (set_period / fixed_period),
     	      (1 + per) ** (MONTH / fixed_period),
     	      (1 + per) ** (YEAR / fixed_period),
               (1 + per) ** (FIVE_YEAR / fixed_period),
     	      (1 + per) ** (TEN_YEAR / fixed_period)]
-    return [initial_sum * g for g in growth] if initial_sum else growth
+    dep_data = [initial_sum * g for g in growth] if initial_sum else [100 * g for g in growth]
+    year_per = round((growth[2] - 1) * 100, 2)
+    return dep_data, year_per
+
+
+def print_res(data, year_per, flag):
+    """Print deposit data"""
+    
+    period = ['Set period', 'One month', 'One year', 'Five years', 'Ten years']
+    period = [el + ' yield' if flag else el + ' %' for el in period]
+    
+    for key, value in dict(zip(period, data)).items():
+        print("{0} = {1:.2f}".format(key, value))
+    
+    print(f'One year % yield = {year_per}')
 
 
 def main(args):
     """Gets called when run as a script."""
+    
     if len(args) != 4 + 1:
         if len(args) == 4:
+            initial_sum = None
             percent, fixed_period, set_period = map(float, args[1:])
-            res = deposit(percent, fixed_period, set_period)
-            print(f'Percent for setted period: {res[0]}\nOne year percent: {res[2]}\n')
+            res, y_per = deposit(percent, fixed_period, set_period)
+            print_res(res, y_per, initial_sum)
             exit()
         exit(USAGE.format(script=args[0]))
 
-    args = args[1:]
-    percent, fixed_period, set_period, initial_sum = map(float, args)
-
-    # same as
-    # initial_sum = float(args[0])
-    # percent = float(args[1])
-    # ...
-
-    res = deposit(percent, fixed_period, set_period, initial_sum)
-    print(f'Percent yield for setted period: {res[0]}\nOne year percent yield: {res[2]}\n')
+    percent, fixed_period, set_period, initial_sum = map(float, args[1:])
+    res, y_per = deposit(percent, fixed_period, set_period, initial_sum)
+    print_res(res, y_per, initial_sum)
 
 
 if __name__ == '__main__':
