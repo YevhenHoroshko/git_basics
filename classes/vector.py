@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
-"""Script contains a list of useful functions for work with dictionaries.
+"""Script contains Vector handling.
 
-Functions:
-- union, intersection, difference, symmetric difference
-- sort dictionary by keys/values in different orders
-- swap dictionary
+On lecture: magic methods, __slots__, decorator, property, classmethod, staticmethod.
 """
+
+# TODO: add vector by vector multiplication (vector cross product and dot product).
+#       Note: you may use __mul__ for dot product, and __matmul__ for cross product.
+# TODO: add negation of the Vector object.
+# TODO: update addition, allowing Vector objects to be added to non-Vector objects.
+
 
 import cmath
 import functools
@@ -86,9 +89,17 @@ class Vector:
     def __bool__(self):
         return not self.x == self.y == 0
 
+    # right-hand side addition
+    def __radd__(self, other):
+        return self.__add__(other)
+
     def __add__(self, other):
-        if not isinstance(other, type(self)):
-            raise TypeError(f'operands {self} and {other} type mismatch')
+        if isinstance(other, type(self)):
+            return type(self)(self.x + other.x, self.y + other.y)
+        elif isinstance(other, int):
+            return type(self)(self.x + other, self.y + other)
+        else:
+            raise TypeError(f"operands '{self}' and '{other}' type mismatch")
 
         # create a new vector with sum of coords
         x = self.x + other.x
@@ -103,9 +114,6 @@ class Vector:
         return self.__mul__(other)
 
     def __mul__(self, other):
-        # we will implement only Vector * scalar multiplication
-        # resulting in proportional scaling of its coords
-
         if not isinstance(other, type(self)):
             # if has other type
             if not isinstance(other, int):
@@ -113,14 +121,24 @@ class Vector:
                 # ==> ensure it is convertable to float
                 other = float(other)
             # now we're either dealing with int, or with float
+            # Vector * scalar multiplication
+            # resulting in proportional scaling of its coords
             return type(self)(x=other * self.x, y=other * self.y)
+        # Vector * Other_Vector multiplication (dot product)
+        return self.x * other.x + self.y * other.y
 
-        # TODO: add vector by vector mul here
-        # vector cross product and dot product
-        # Note: you may use __mul__ for dot product,
-        # and __matmul__ for cross product
-        raise NotImplementedError('not done yet, see TODO')
+    def __rmatmul__(self, other):
+        return self.__matmul__(other)
 
+    def __matmul__(self, other):
+        if not isinstance(other, type(self)):
+            raise TypeError(f"operands '{self}' and '{other}' type mismatch")
+        # Vector * Other_Vector cross multiplication (cross product)
+        return self.x * other.y - self.y * other.x
+
+    def __neg__(self):
+        return type(self)(-self.x, -self.y)
+    
     def __truediv__(self, other):
         if not other:
             raise ZeroDivisionError
@@ -168,3 +186,12 @@ if __name__ == '__main__':
     two = Vector.from_polar(10, 135)
 
     angle = Vector.angle_between(one, two)
+
+    # just to show my updates in this script
+    print(f'Negation of {vec}\t\t: {-vec}')
+    print(f'{vec} + {oth} \t= {vec + oth}')
+    print(f'{vec} + 5 \t\t\t= {vec + 5}')
+    print(f'{vec} * {oth} \t= {vec * oth} (dot product)')
+    print(f'{vec} @ {oth} \t= {vec @ oth} (cross product)')
+    print(f'{vec} @ 5 \t\t\t= ...type_error...')
+    print(f'{vec @ 5}')
