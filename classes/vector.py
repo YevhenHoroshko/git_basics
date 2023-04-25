@@ -102,10 +102,10 @@ class Vector:
             raise TypeError(f"operands '{self}' and '{other}' type mismatch")
 
         # create a new vector with sum of coords
-        x = self.x + other.x
-        y = self.y + other.y
+        # x = self.x + other.x
+        # y = self.y + other.y
         # same as self.__class__(x=x, y=y)
-        return type(self)(x=x, y=y)
+        # return type(self)(x=x, y=y)
 
     def __sub__(self, other):
         return self + (other * -1)  # call mul explicitly
