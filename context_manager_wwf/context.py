@@ -1,66 +1,64 @@
-import time
-import sys
+#!/usr/bin/env python3
+
+import logging
+
+"""Context manager script.
+
+Task. Create a context manager that would record all exceptions that occur in
+the context and write them to a log file. Exceptions should only be caught, not
+silenced. That is, if an exception occurred after exiting the context manager, 
+it will appear further.
+"""
 
 
-class Benchmark:
-
-    def __init__(self, timer=time.perf_counter, stream=sys.stdout, islog=True):
-        self.timer = timer
-        self.stream = stream
-        self.islog = islog
+class ExceptionLogger:
+    def __init__(self, log_file):
+        self.log_file = log_file
 
     def __enter__(self):
-        """This is called before entering context manager block."""
-        self.tstart = self.timer()  # save time when we started
-
-        if self.islog:
-            print(f'Entering block @ {self.tstart}', file=self.stream)
-
-        # returned value is assigned to with clause
-        # e.g. with .... as val:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        """This is called before returning from context manager block."""
-        curtime = self.timer()
-
-        if self.islog:
-            print(f'Exiting block @ {curtime}', file=self.stream)
-
-        took = curtime - self.tstart  # compute time delta
-
-        msg = ''
-        if exc_type is not None:  # not None means there were an exc raised
-            msg += '[INTERRUPTED] '
-
-        msg += f'Took {took * 1000:.3f} ms'
-        print(msg, file=self.stream)
-
-        # return True
-
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            logging.basicConfig(filename=self.log_file, level=logging.DEBUG)
+            # log the exception and its traceback to the file
+            logging.exception('Exception occurred')
+            # add empty line between exception logs
+            logging.info('\n')
+        return False
 
 if __name__ == '__main__':
-    # Measure some language statements
-    with Benchmark(islog=True) as bench:
-        l = list(range(1000))
-        max(l)
-        # get something from bench obj
-        cur = bench.timer()
-        sum(l)
 
-    # (almost) the same as
-    bench = Benchmark(islog=True)
-    with bench:
-        l = list(range(1000))
-        max(l)
-        # get something from bench obj
-        cur = bench.timer()
-        sum(l)
+    # Exception: NameError
+    with ExceptionLogger('exceptions.log'):
+        a = 10
+        # 'c' is not defined
+        b = c
 
-    import random
+    # Exception: ZeroDivisionError
+    with ExceptionLogger('exceptions.log'):
+        a = 10
+        b = 0
+        # division by zero
+        c = a / b
 
-    # Measure time of generating 1 MiB
-    # of random bytes in 1 KiB chunks
-    with Benchmark(islog=False):
-        for i in range(1024):
-            bt = random.randbytes(1024)
+    # Exception: FileNotFoundError
+    with ExceptionLogger('exceptions.log'):
+        with open('nonexistent_file.txt') as f:
+            # file is not exist
+            contents = f.read() # file is not exist
+
+    # Exception: TypeError
+    with ExceptionLogger('exceptions.log'):
+        a = 'hello'
+        b = 10
+        # different types division
+        c = a / b
+
+    # Exception: Everything is OK
+    with ExceptionLogger('exceptions.log'):
+        a = 10
+        b = 5
+        c = a / b
+        print(f'{a} / {b} = {c}')
+
