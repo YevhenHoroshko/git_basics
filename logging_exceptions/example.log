@@ -1,0 +1,14 @@
+2023-05-05 03:15:37,803 DEBUG: URL: https://geocoding-api.open-meteo.com/v1/search?name=Lviv
+2023-05-05 03:15:38,018 DEBUG: City data: {'Lviv': {'latitude': 47.86055, 'longitude': 33.55113, 'country': 'Ukraine'}, 'Lvivka': {'latitude': 49.83454, 'longitude': 32.10011, 'country': 'Ukraine'}, 'Lvivske': {'latitude': 49.32093, 'longitude': 35.23671, 'country': 'Ukraine'}, 'Lvivski Otruby': {'latitude': 46.94554, 'longitude': 33.10446, 'country': 'Ukraine'}, 'Lviv Airport': {'latitude': 49.8125, 'longitude': 23.95611, 'country': 'Ukraine'}}
+2023-05-05 03:15:38,019 INFO: Start monitor the temperature in Lviv...
+2023-05-05 03:15:38,019 INFO: Start monitor the temperature in Lviv...
+2023-05-05 03:15:38,019 DEBUG: URL: https://geocoding-api.open-meteo.com/v1/search?name=Lviv
+2023-05-05 03:15:38,224 DEBUG: City data: {'Lviv': {'latitude': 47.86055, 'longitude': 33.55113, 'country': 'Ukraine'}, 'Lvivka': {'latitude': 49.83454, 'longitude': 32.10011, 'country': 'Ukraine'}, 'Lvivske': {'latitude': 49.32093, 'longitude': 35.23671, 'country': 'Ukraine'}, 'Lvivski Otruby': {'latitude': 46.94554, 'longitude': 33.10446, 'country': 'Ukraine'}, 'Lviv Airport': {'latitude': 49.8125, 'longitude': 23.95611, 'country': 'Ukraine'}}
+2023-05-05 03:15:38,225 DEBUG: URL: https://api.open-meteo.com/v1/forecast?latitude=47.86055&longitude=33.55113&current_weather=true
+2023-05-05 03:15:40,204 INFO: Monitoring stopped by user!
+2023-05-05 03:15:40,204 DEBUG: URL: https://api.open-meteo.com/v1/forecast?latitude=47.86055&longitude=33.55113&current_weather=true
+2023-05-05 03:15:40,414 DEBUG: wth.temperature:   11.9
+2023-05-05 03:15:40,414 DEBUG: wth.windspeed:     1.6
+2023-05-05 03:15:40,414 DEBUG: wth.winddirection: 153.0
+2023-05-05 03:15:40,414 DEBUG: wth.time:          2023-05-05T00:00
+2023-05-05 03:15:40,414 DEBUG: wth.timezone:      GMT

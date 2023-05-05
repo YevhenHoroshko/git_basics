@@ -1,32 +1,44 @@
 #!/usr/bin/env python3
 
+import argparse
 import datetime
 import json
+import logging
 import requests
 import sys
 import time
-
+import warnings
 from pprint import pprint
 
-"""Script requests current weather data for specific city (Lecture 8).
+"""Script requests current weather data for specific city (Lecture 10).
 
-Task. Add the ability to specify the location when creating an object of the 
-Weather type: or by passing an object of the city type (city=City(...)); or
-by the name of the city (city='Odessa'); or by a pair of coordinates. Make 
-requests to be performed "lazily" (that is, if the necessary data is missing, 
-a request is made to the server). 
-Complement the classes with other useful methods and attributes at your 
-discretion (for example, in addition to temperature, add wind speed or add 
-forecast).
+Task. Add logging with different levels of detail. Verbosity is specified 
+by the -v (verbosity) argument. If the user does not provide this argument,
+the program simply outputs the result. With the argument -v – displays more
+detailed information about the performed actions. And as the number of 
+arguments increases, the detail increases (for example, -vvv results in the 
+most detailed log output). For this, you can use action='count' in argparse.
+
+Add an exception. Create a top-level exception class and specific exception 
+classes that inherit from it. Make exception handling so that all third-party
+exceptions are framed by their own exception classes. For example, except 
+URLError as err: and raise WeatherAPIError('unable to connect') from err, which
+will set the reason for WeatherAPIError as raised as a result of URLError, etc.
+Thus, our own exceptions must become unbound from the exceptions of the 
+libraries that our code relies on. And the user will be able to catch our own
+exceptions without having to go into the details of which libraries our code 
+uses and how it is implemented.
+
+Try to add your own warnings where it would be useful (eg no argument is given 
+and default value is used, etc.).
 """
 
 
-USAGE = """USAGE: {script} [--monitor] [city_name]
+DEFAULT_CITY = 'Kyiv'
 
- --monitor - monitor and log temperature data in specific city.
- city_name - default value is {city_name}
-"""
-USAGE = USAGE.strip()
+logger = logging.getLogger(__name__)
+# set default level, can be changed afterwards by user
+logger.setLevel(logging.INFO)
 
 
 def make_request(url):
@@ -40,12 +52,28 @@ def make_request(url):
     return data
 
 
-class WeatherError(Exception):
+class WeatherApiError(Exception):
+    '''Raised when Weather API not worked.'''
     pass
 
 
-class CityNotFoundError(WeatherError, LookupError):
+class CityNotFoundError(WeatherApiError, LookupError):
     """Raised when city not found."""
+    msg = 'city is not found'
+
+    def __init__(self, city_name, msg=None):
+        logger.debug('city name = %r, not found.', city_name)
+        self.city = city_name
+        if msg is not None:
+            self.msg = msg
+        super().__init__(city_name, msg or self.msg)
+
+    def __str__(self):
+        return f''''{self.city}' {self.msg}'''
+
+
+class CityArgNotProvidedWarning(Warning):
+    '''Raised when city argument not provided.'''
     pass
 
 
@@ -56,29 +84,9 @@ class RequestData:
         """Make request to remote URL parsing json result."""
         # Create url for further GET request to OpenMeteo
         url = self.URL_TEMPLATE.format(**kwargs)
-
+        logger.debug(f'URL: {url}')
         text = make_request(url=url)
         data = json.loads(text)
-        
-        # !!!OR!!! You can remove def make_request(url):...
-        # and here instead of 
-        #
-        # text = make_request(url=url) 
-        # data = json.loads(text)
-        #
-        # write these rows:
-        #
-        # response = requests.get(url)
-        # response.raise_for_status()
-        # data = response.json()
-        #
-        # or these rows:
-        #
-        # response = requests.get(url)
-        # if response.status_code == 404:
-        #     raise CityNotFoundError(kwargs['name'])
-        # data = json.loads(response.text)
-        
         return data
 
 
@@ -99,37 +107,14 @@ class City(RequestData):
 
         if self.name not in cities:
             raise CityNotFoundError(self.name)
+            logger.error(f'City name {self.name} is not found.')
 
-        # code below executes only if we didn't raise an exception
         for k, v in cities[self.name].items():
-            # same as self.__dict__.update(res.get(self.name, {}))
-            # but more portable
             setattr(self, k, v)
-
-        # Set instance attributes if exact match found
-        # if self.name in cities:
-        #     item = cities[self.name]
-        #     self.latitude = cities['latitude']
-        #     self.longitude = cities['longitude']
-        #     self.country = cities['country']
 
     def find_cities(self):
         data = super().request(name=self.name)
         data = data.get('results', {})
-        # transform into data structure of the form:
-        # {'Kyiv': {
-        #   'latitude': 50.45466,
-        #   'longitude': 30.5238,
-        #   'country': 'Ukraine'
-        #   },
-        #  'Kyivske': { ... },
-        # }
-
-        # extract = ['latitude', 'longitude', 'country']
-        # res = {entry['name']: {k: entry[k] for k in extract}
-        #        for entry in data}
-
-        # Transform data structure
         res = {}
         for entry in data:
             name = entry['name']
@@ -138,7 +123,7 @@ class City(RequestData):
                 'longitude': entry['longitude'],
                 'country': entry['country']
             }
-
+        logger.debug(f'City data: {res}')
         return res
 
 
@@ -155,7 +140,9 @@ class Weather(RequestData):
         if (city is None) and (latitude is None or longitude is None):
             msg = ('Either city or a pair of latitude, '
                    'longitude must be provided')
-            raise WeatherError(msg)
+            raise WeatherApiError(msg)
+            logger.error('Either city or a pair of latitude, '
+                         'longitude must be provided')
         ...
         self.lat = latitude if latitude else city.latitude
         # same as
@@ -179,6 +166,33 @@ class Weather(RequestData):
         if self.data is None:
             self.request()
         return self.data['current_weather']['temperature']
+    
+    @property
+    def windspeed(self):
+        """Retreive wind speed from OpenMeteo response."""
+        if self.data is None:
+            self.request()
+        return self.data['current_weather']['windspeed']
+
+    @property
+    def winddirection(self):
+        """Retreive wind direction from OpenMeteo response."""
+        if self.data is None:
+            self.request()
+        return self.data['current_weather']['winddirection']
+
+    @property
+    def time(self):
+        """Retreive time from OpenMeteo response."""
+        if self.data is None:
+            self.request()
+        return self.data['current_weather']['time']
+
+    @property
+    def timezone(self):
+        if self.data is None:
+            self.request()
+        return self.data['timezone']
 
 def monitor_temperature(city_name, temp_file):
     """Function to monitor temperature and write it to a file."""
@@ -186,14 +200,16 @@ def monitor_temperature(city_name, temp_file):
     print(f'Temperature monitoring in {city.name} started. '
           f'Logging period: {period}s\n'
            'Press [Ctrl + C] to stop monitoring...\n ')
+    logger.info(f'Start monitor the temperature in {city.name}...')
     while True:
         with open(temp_file, 'a') as f:
             try:
                 w = Weather(city_name)
                 temp = w.temperature
-            except WeatherError as e:
+            except WeatherApiError as e:
                 print(f'Error getting temperature: {e}')
                 temp = 'N/A'
+                logger.error('Error getting temperature!')
             now = datetime.datetime.now()
             timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
             f.write(f'{timestamp} - {temp}\n')
@@ -203,32 +219,61 @@ def monitor_temperature(city_name, temp_file):
 
 if __name__ == '__main__':
     
-    city_name_bd = 'Kyiv'
+    parser = argparse.ArgumentParser()                       
+    parser.add_argument('city_name', nargs = '?', default = DEFAULT_CITY, 
+                        help = 'name of the city')
+    parser.add_argument('-m', '--monitor', action = 'store_true', 
+                        help = 'enable monitor mode')
+    parser.add_argument('-v', '--verbosity', action = 'count', default = 0, 
+                        help = 'increase output verbosity')
+    args = parser.parse_args()
     
-    if len(sys.argv) > 3:
-        exit(USAGE.format(script=sys.argv[0], city_name=city_name_bd))
     
-    monitor = False 
-    if '--monitor' in sys.argv:
-        monitor = True
-        sys.argv.remove('--monitor')
+    logging.basicConfig(filename='example.log', encoding='utf-8', filemode='w',
+                        format='%(asctime)s %(levelname)s: %(message)s', 
+                        level=logging.WARNING)
+    log = logging.getLogger(__name__)
+    if args.verbosity == 0:
+        pass
+    elif args.verbosity == 1:
+        log.setLevel(logging.DEBUG)
+    elif args.verbosity == 2:
+        log.setLevel(logging.INFO)
+    else:
+        log.setLevel(logging.WARNING)
         
-    name = sys.argv[1] if len(sys.argv) == 2 else city_name_bd
+    if args.city_name == DEFAULT_CITY:
+        print('Warning...')
+        warnings.warn('City argument not provided. Using default city.', 
+                      CityArgNotProvidedWarning)
+        log.warning(f'City name not provided. Default name: {args.city_name}')
+        print('*' * 100)
 
-    city = City(name)
+    city = City(args.city_name)
     city.request()
     wth = Weather(city=city)
     
-    if monitor:
+    if args.monitor:
         file_name = 'templog.txt'
         try:
+            log.info(f'Start monitor the temperature in {args.city_name}...')
             monitor_temperature(city.name, file_name)
         except KeyboardInterrupt:
             print(f'\nTemperature monitoring stopped by user. '
                   f'See results in {file_name}.')
+            log.info('Monitoring stopped by user!')
     
-    print('\nCurrent temperature in ' + '\033[1m' + 
-           f'{city.name}' + '\033[0m' + f': {wth.temperature}\n')
+    print('\nCurrent weather data in ' + '\033[1m' + 
+           f'{city.name}' + '\033[0m' +':\n')
+    print(f'\tTemperature:    {wth.temperature}')
+    log.debug(f'wth.temperature:   {wth.temperature}')
+    print(f'\tWind speed:     {wth.windspeed}')
+    log.debug(f'wth.windspeed:     {wth.windspeed}')
+    print(f'\tWind direction: {wth.winddirection}')
+    log.debug(f'wth.winddirection: {wth.winddirection}')
+    print(f'\tTime:           {wth.time}')
+    log.debug(f'wth.time:          {wth.time}')
+    print(f'\tTime zone:      {wth.timezone}\n')
+    log.debug(f'wth.timezone:      {wth.timezone}')
     print('\x1B[3m' + 'Pretty-print data:' + '\x1B[0m'+'\n')
     pprint(wth.data)
-
