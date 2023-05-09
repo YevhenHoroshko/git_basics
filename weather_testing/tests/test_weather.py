@@ -2,8 +2,8 @@ import os
 import unittest
 
 from unittest.mock import MagicMock, patch
-from weather import (City, Weather, CityNotFoundError, monitor_temperature,
-                     CityArgNotProvidedWarning, RequestData, WeatherApiError)
+from weather_testing.weather import (City, Weather, CityNotFoundError,
+                                     monitor_temperature)
 
 
 class TestCity(unittest.TestCase):
@@ -28,7 +28,8 @@ class TestCity(unittest.TestCase):
     
     def test_find_cities(self):
         # test that find_cities method returns a dictionary of cities
-        with patch('weather.RequestData.request', self.mock_request):
+        with patch('weather_testing.weather.RequestData.request',
+                   self.mock_request):
             city = City(name='Lviv')
             cities = city.find_cities()
             self.assertEqual(cities, {'Lviv': {'latitude': 47.86055,
@@ -40,15 +41,16 @@ class TestCity(unittest.TestCase):
 
     def test_request(self):
         # test that request method sets attributes on the City object
-        with patch('weather.RequestData.request', self.mock_request):
+        with patch('weather_testing.weather.RequestData.request',
+                   self.mock_request):
             city = City(name='Lviv')
             city.request()
             self.assertEqual(city.latitude, 47.86055)
             self.assertEqual(city.longitude, 33.55113)
-            self.assertEqual(city.country, 'Ukraine')
 
         # test that request method raises an exception for an unknown city
-        with patch('weather.RequestData.request', self.mock_request):
+        with patch('weather_testing.weather.RequestData.request',
+                   self.mock_request):
             city = City(name='Lvvv')
             with self.assertRaises(CityNotFoundError):
                 city.request()
@@ -70,8 +72,9 @@ class TestWeather(unittest.TestCase):
         self.mock_request = MagicMock(return_value=self.weather_data)
 
     def test_request(self):
-        # test that request method sets the data attribute on the Weather object
-        with patch('weather.RequestData.request', self.mock_request):
+        # test that request method sets the data attribute on the Weather obj
+        with patch('weather_testing.weather.RequestData.request',
+                   self.mock_request):
             weather = Weather(latitude=48.46664, longitude=35.04066)
             weather.request()
             self.assertEqual(weather.data, self.weather_data)

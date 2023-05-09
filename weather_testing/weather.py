@@ -113,23 +113,28 @@ class Weather(RequestData):
     URL_TEMPLATE = ('https://api.open-meteo.com/v1/forecast?'
                     'latitude={lat}&longitude={lon}&current_weather=true')
 
-    def __init__(self, city=None, latitude=None, longitude=None):
-        if isinstance(city, str):
+    def __init__(self, city_name=None, latitude=None, longitude=None):
+        if isinstance(city_name, str):
             # Create a City object from the city name
-            city = City(name=city)
-            city.request()
-        
-        if (city is None) and (latitude is None or longitude is None):
+            my_city = City(name=city_name)
+            my_city.request()
+            self.lat = my_city.latitude
+            self.lon = my_city.longitude
+        elif isinstance(city_name, City):
+            # Request data for City
+            city_name.request()
+            self.lat = city_name.latitude
+            self.lon = city_name.longitude
+        elif latitude and longitude:
+            self.lat = latitude
+            self.lon = longitude
+        else:
             msg = ('Either city or a pair of latitude, '
                    'longitude must be provided')
             logger.error('Either city or a pair of latitude, '
                          'longitude must be provided')
             raise WeatherApiError(msg)
         ...
-        self.lat = latitude if latitude else city.latitude
-        # same as
-        # self.lat = latitude or city.latitude
-        self.lon = longitude if longitude else city.longitude
         self.data = None
 
     def __repr__(self):
@@ -240,7 +245,7 @@ if __name__ == '__main__':
 
     city = City(args.city_name)
     city.request()
-    wth = Weather(city=city)
+    wth = Weather(city_name=city)
     
     if args.monitor:
         file_name = 'templog.txt'
