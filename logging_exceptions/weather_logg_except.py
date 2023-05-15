@@ -106,8 +106,8 @@ class City(RequestData):
         cities = self.find_cities()
 
         if self.name not in cities:
-            raise CityNotFoundError(self.name)
             logger.error(f'City name {self.name} is not found.')
+            raise CityNotFoundError(self.name)
 
         for k, v in cities[self.name].items():
             setattr(self, k, v)
@@ -140,9 +140,9 @@ class Weather(RequestData):
         if (city is None) and (latitude is None or longitude is None):
             msg = ('Either city or a pair of latitude, '
                    'longitude must be provided')
-            raise WeatherApiError(msg)
             logger.error('Either city or a pair of latitude, '
                          'longitude must be provided')
+            raise WeatherApiError(msg)
         ...
         self.lat = latitude if latitude else city.latitude
         # same as
@@ -229,7 +229,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     
-    logging.basicConfig(filename='example.log', encoding='utf-8', filemode='w',
+    logging.basicConfig(filename='example.log', encoding='utf-8', filemode='a',
                         format='%(asctime)s %(levelname)s: %(message)s', 
                         level=logging.WARNING)
     log = logging.getLogger(__name__)

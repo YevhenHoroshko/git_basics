@@ -222,7 +222,7 @@ if __name__ == '__main__':
                         help='increase output verbosity')
     args = parser.parse_args()
 
-    logging.basicConfig(filename='example.log', encoding='utf-8', filemode='w',
+    logging.basicConfig(filename='example.log', encoding='utf-8', filemode='a',
                         format='%(asctime)s %(levelname)s: %(message)s',
                         level=logging.WARNING)
 
